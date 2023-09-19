@@ -1,0 +1,9 @@
+{
+  "name": "aws-billing-to-slack",
+  "description": "",
+  "version": "0.1.0",
+  "devDependencies": {
+    "serverless-plugin-aws-alerts": "^1.7.5",
+    "serverless-python-requirements": "github:serverless/serverless-python-requirements#master"
+  }
+}

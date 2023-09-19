@@ -1,0 +1,57 @@
+service: aws-config-to-slack
+
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-aws-alerts
+package:
+  exclude:
+    - node_modules/**
+    - venv/**
+provider:
+  name: aws
+  region: ${env:AWS_REGION, env:AWS_DEFAULT_REGION, 'us-east-1'}
+  runtime: python3.9
+
+  deploymentBucket:
+    blockPublicAccess: true
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "organizations:ListAccounts"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "sts:AssumeRole"
+          Resource: "*"
+
+functions:
+  report_resources:
+    handler: handler.lambda_handler
+    description: Send account config details to Slack
+
+    # Keep costs minimal
+    memorySize: 128
+    timeout: 10
+
+    events:
+      # Every day at 16:00 UTC / 11am CDT
+      - schedule: cron(0 16 * * ? *)
+
+    environment:
+      AUDIT_ROLE_ARN: ${param:audit_role_arn, ''}
+      AGGREGATOR_NAME: ${param:aggregator_name, ''}
+      SLACK_WEBHOOK_URL: ${param:slack_url, ''}
+
+custom:
+  alerts:
+    topics:
+      alarm:
+        topic: ${self:service}-alerts-alarm
+        notifications:
+          - protocol: email
+            endpoint: stefan@chkk.io
+    alarms:
+      - functionErrors
+      - functionThrottles
